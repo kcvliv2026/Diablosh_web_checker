@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="fil">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>AXH CODM Checker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Consolas', 'Courier New', monospace;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            background-color: #0D0D0D;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* TOP NAV */
+        .top-nav {
+            background-color: #1A1A1A;
+            display: flex;
+            padding: 10px 5px;
+            border-bottom: 1px solid #2D2D2D;
+            overflow-x: auto;
+        }
+
+        .nav-item {
+            color: #ccc;
+            padding: 8px 15px;
+            margin: 0 3px;
+            border-radius: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+
+        .nav-item.active {
+            background-color: #2D2D2D;
+            color: #00FF00;
+        }
+
+        /* MAIN CONTENT */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* TOP BAR */
+        .top-bar {
+            background-color: #1A1A1A;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #2D2D2D;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .controls button {
+            padding: 8px 18px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        #startBtn { background-color: #00CC00; color: #000; }
+        #stopBtn { background-color: #CC0000; color: #fff; display: none; }
+        #status { color: #00FF00; font-weight: bold; font-size: 13px; }
+
+        .file-name { color: #ccc; font-size: 12px; }
+
+        /* TERMINAL */
+        .terminal-section {
+            flex: 1;
+            padding: 10px 15px;
+            overflow-y: auto;
+            background-color: #0D0D0D;
+            font-size: 12px;
+        }
+
+        .terminal-log {
+            color: #00FF00;
+            margin-bottom: 3px;
+            line-height: 1.4;
+        }
+
+        .log-error { color: #FF0000; }
+        .log-warning { color: #FFCC00; }
+
+        /* STATS */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            padding: 10px 15px;
+            background-color: #1A1A1A;
+            border-top: 1px solid #2D2D2D;
+        }
+
+        .stat-card {
+            background-color: #2D2D2D;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .stat-label {
+            color: #ccc;
+            font-size: 11px;
+            margin-bottom: 3px;
+        }
+
+        .stat-value {
+            color: #00FF00;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        /* FILE UPLOAD */
+        #fileInput { display: none; }
+        .file-manager-placeholder {
+            color: #ccc;
+            font-size: 13px;
+            padding: 30px 15px;
+            text-align: center;
+        }
+
+        .upload-btn {
+            background-color: #00CC00;
+            color: #000;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        #fileStatus {
+            margin-top: 15px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="top-nav">
+        <div class="nav-item active" id="navTerminal">Terminal</div>
+        <div class="nav-item" id="navFileManager">File Manager</div>
+        <div class="nav-item" id="navSettings">Settings</div>
+    </div>
+
+    <div class="main-content">
+        <div class="top-bar">
+            <div class="controls">
+                <button id="startBtn">START</button>
+                <button id="stopBtn">STOP</button>
+                <span id="status">STATUS: IDLE</span>
+            </div>
+            <div class="file-name" id="currentFileName">No file selected</div>
+        </div>
+
+        <div id="terminalSection" class="terminal-section">
+            <div class="terminal-log">[AXH CHECKER] READY TO USE</div>
+            <div class="terminal-log">[INFO] SELECT FILE VIA FILE MANAGER</div>
+        </div>
+
+        <div id="fileManagerSection" class="terminal-section" style="display: none;">
+            <div class="file-manager-placeholder">
+                <p>TAP TO SELECT .TXT FILE</p>
+                <p>(FORMAT: username|password)</p>
+                <button class="upload-btn" id="browseBtn">BROWSE FILE</button>
+                <input type="file" id="fileInput" accept=".txt">
+                <div id="fileStatus"></div>
+            </div>
+        </div>
+
+        <div id="settingsSection" class="terminal-section" style="display: none;">
+            <div class="terminal-log">[SETTINGS] READY</div>
+            <div class="terminal-log">[INFO] NO SETUP NEEDED</div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">TOTAL</div>
+                <div class="stat-value" id="statTotal">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">TIME (s)</div>
+                <div class="stat-value" id="statTime">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">VALID</div>
+                <div class="stat-value" id="statValid">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">INVALID</div>
+                <div class="stat-value" id="statInvalid">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">CLEAN</div>
+                <div class="stat-value" id="statClean">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">UNCLEAN</div>
+                <div class="stat-value" id="statUnclean">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">HAS CODM</div>
+                <div class="stat-value" id="statHasCodm">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">NO CODM</div>
+                <div class="stat-value" id="statNoCodm">0</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // GLOBAL VARS
+        let accountList = [];
+        let isRunning = false;
+        let startTime = 0;
+        let timerInterval = null;
+        let stats = {
+            total: 0, time: 0, valid: 0, invalid: 0,
+            clean: 0, unclean: 0, hasCodm: 0, noCodm: 0
+        };
+
+        // GET ELEMENTS
+        const navTerminal = document.getElementById('navTerminal');
+        const navFileManager = document.getElementById('navFileManager');
+        const navSettings = document.getElementById('navSettings');
+        const terminalSection = document.getElementById('terminalSection');
+        const fileManagerSection = document.getElementById('fileManagerSection');
+        const settingsSection = document.getElementById('settingsSection');
+        const browseBtn = document.getElementById('browseBtn');
+        const fileInput = document.getElementById('fileInput');
+        const fileStatus = document.getElementById('fileStatus');
+        const currentFileName = document.getElementById('currentFileName');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const statusText = document.getElementById('status');
+        const statTotal = document.getElementById('statTotal');
+        const statTime = document.getElementById('statTime');
+        const statValid = document.getElementById('statValid');
+        const statInvalid = document.getElementById('statInvalid');
+        const statClean = document.getElementById('statClean');
+        const statUnclean = document.getElementById('statUnclean');
+        const statHasCodm = document.getElementById('statHasCodm');
+        const statNoCodm = document.getElementById('statNoCodm');
+
+        // SWITCH SECTIONS
+        function showSection(section) {
+            terminalSection.style.display = 'none';
+            fileManagerSection.style.display = 'none';
+            settingsSection.style.display = 'none';
+            
+            navTerminal.classList.remove('active');
+            navFileManager.classList.remove('active');
+            navSettings.classList.remove('active');
+
+            if (section === 'terminal') {
+                terminalSection.style.display = 'block';
+                navTerminal.classList.add('active');
+            } else if (section === 'fileManager') {
+                fileManagerSection.style.display = 'block';
+                navFileManager.classList.add('active');
+            } else if (section === 'settings') {
+                settingsSection.style.display = 'block';
+                navSettings.classList.add('active');
+            }
+        }
+
+        // NAV EVENTS
+        navTerminal.addEventListener('click', () => showSection('terminal'));
+        navFileManager.addEventListener('click', () => showSection('fileManager'));
+        navSettings.addEventListener('click', () => showSection('settings'));
+
+        // FILE UPLOAD
+        browseBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', handleFileUpload);
+
+        function handleFileUpload(e) {
+            const file = e.target.files[0];
+            if (!file) {
+                fileStatus.innerHTML = '<span class="log-error">❌ NO FILE SELECTED</span>';
+                return;
+            }
+
+            if (!file.name.endsWith('.txt')) {
+                fileStatus.innerHTML = '<span class="log-error">❌ ONLY .TXT ALLOWED</span>';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const content = event.target.result;
+                    accountList = parseAccounts(content);
+                    
+                    stats.total = accountList.length;
+                    updateStats();
+                    
+                    fileStatus.innerHTML = `<span style="color: #00FF00;">✅ FILE LOADED: ${file.name} (${stats.total} ACCOUNTS)</span>`;
+                    currentFileName.textContent = file.name;
+                    addToTerminal(`[FILE] LOADED: ${file.name} | ${stats.total} ACCOUNTS`);
+                } catch (err) {
+                    fileStatus.innerHTML = '<span class="log-error">❌ FILE READ ERROR</span>';
+                    addToTerminal(`[ERROR] ${err.message}`, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // PARSE ACCOUNTS
+        function parseAccounts(content) {
+            const accounts = [];
+            const lines = content.split('\n').map(line => line.trim()).filter(line => line);
+            
+            lines.forEach((line, index) => {
+                if (!line.includes('|')) {
+                    addToTerminal(`[WARNING] LINE ${index+1}: WRONG FORMAT`, 'warning');
+                    return;
+                }
+
+                const [user, pass] = line.split('|').map(part => part.trim());
+                if (user && pass) {
+                    accounts.push({ username: user, password: pass });
+                } else {
+                    addToTerminal(`[WARNING] LINE ${index+1}: EMPTY DETAILS`, 'warning');
+                }
+            });
+            return accounts;
+        }
+
+        // ADD TO TERMINAL
+        function addToTerminal(text, type = 'normal') {
+            const log = document.createElement('div');
+            log.className = type === 'error' ? 'terminal-log log-error' : 
+                           type === 'warning' ? 'terminal-log log-warning' : 'terminal-log';
+            log.textContent = text;
+            terminalSection.appendChild(log);
+            terminalSection.scrollTop = terminalSection.scrollHeight;
+        }
+
+        // UPDATE STATS
+        function updateStats() {
+            statTotal.textContent = stats.total;
+            statTime.textContent = stats.time;
+            statValid.textContent = stats.valid;
+            statInvalid.textContent = stats.invalid;
+            statClean.textContent = stats.clean;
+            statUnclean.textContent = stats.unclean;
+            statHasCodm.textContent = stats.hasCodm;
+            statNoCodm.textContent = stats.noCodm;
+        }
+
+        // START CHECKER
+        startBtn.addEventListener('click', startChecker);
+        function startChecker() {
+            if (accountList.length === 0) {
+                addToTerminal('[ERROR] UPLOAD A TXT FILE FIRST!', 'error');
+                return;
+            }
+            if (isRunning) return;
+
+            stats.time = 0; stats.valid = 0; stats.invalid = 0;
+            stats.clean = 0; stats.unclean = 0; stats.hasCodm = 0; stats.noCodm = 0;
+            updateStats();
+
+            isRunning = true;
+            startTime = Date.now();
+            startBtn.style.display = 'none';
+            stopBtn.style.display = 'inline-block';
+            statusText.textContent = 'STATUS: RUNNING';
+            
+            timerInterval = setInterval(() => {
+                stats.time = Math.floor((Date.now() - startTime) / 1000);
+                updateStats();
+            }, 1000);
+
+            simulateChecking();
+        }
+
+        // STOP CHECKER
+        stopBtn.addEventListener('click', stopChecker);
+        function stopChecker() {
+            if (!isRunning) return;
+            isRunning = false;
+            clearInterval(timerInterval);
+            startBtn.style.display = 'inline-block';
+            stopBtn.style.display = 'none';
+            statusText.textContent = 'STATUS: STOPPED';
+            addToTerminal('[CHECKER] STOPPED BY USER', 'warning');
+        }
+
+        // SIMULATE CHECKING
+        async function simulateChecking() {
+            for (let i = 0;
